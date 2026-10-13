@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FALC · Formulario</title>
+<style>
+  :root{
+    --bg:#f4f6f8; --card:#fff; --ink:#1e293b; --sub:#64748b;
+    --line:#cbd5e1; --accent:#16a34a; --accent2:#166534;
+    --bad:#dc2626; --warn:#ea580c; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:20px;background:var(--bg);color:var(--ink);
+       font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+  .wrap{max-width:960px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 4px}
+  h2{font-size:13px;color:var(--sub);margin:0 0 20px;font-weight:500}
+  h3{font-size:14px;margin:0 0 12px;font-weight:700;text-transform:uppercase;
+     letter-spacing:.05em;color:var(--accent2)}
+  .card{background:var(--card);border:1px solid var(--line);
+        border-radius:var(--radius);padding:18px;margin-bottom:14px}
+  .config{background:#f0f9ff;border:1px solid #7dd3fc;border-radius:var(--radius);
+    padding:12px 18px;margin-bottom:14px;font-size:12px;color:#0c4a6e;line-height:1.7}
+  .config b{color:#075985}
+  .config .tag{display:inline-block;background:#0ea5e9;color:#fff;font-size:10px;
+    font-weight:800;padding:2px 6px;border-radius:4px;margin-right:8px;letter-spacing:.05em}
+  .grid{display:grid;gap:12px}
+  .grid-2{grid-template-columns:1fr 1fr}
+  .grid-3{grid-template-columns:1fr 1fr 1fr}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  label{display:block;font-size:12px;font-weight:600;color:var(--sub);margin-bottom:5px}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);
+    border-radius:8px;font:inherit;color:var(--ink);background:#fff}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  input.error,select.error{border-color:var(--bad);background:#fef2f2}
+  input:disabled,select:disabled,textarea:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}
+  textarea{resize:vertical;min-height:70px}
+  .hint{font-size:11px;color:var(--sub);margin-top:3px}
+  .err-txt{font-size:11px;color:var(--bad);margin-top:3px;display:none}
+  .err-txt.on{display:block}
+  .fila-tramo{background:#f8fafc;border:1px solid var(--line);border-radius:8px;
+    padding:12px;margin-bottom:10px;position:relative}
+  .fila-tramo.master{background:#f0fdf4;border-color:#86efac}
+  .fila-tramo .num{position:absolute;top:8px;left:10px;font-size:11px;
+    font-weight:800;color:var(--sub);background:#fff;padding:2px 6px;border-radius:4px;
+    border:1px solid var(--line)}
+  .fila-tramo.master .num{background:#16a34a;color:#fff;border-color:#16a34a}
+  .fila-tramo .quitar{position:absolute;top:6px;right:8px;background:none;border:none;
+    color:var(--bad);font-size:18px;cursor:pointer;font-weight:800;padding:4px 8px}
+  .fila-tramo .quitar:hover{background:#fee2e2;border-radius:6px}
+  .fila-tramo .body{margin-top:22px}
+  button{cursor:pointer;font:inherit;font-weight:700;border-radius:8px;
+    padding:12px 18px;border:none;font-size:14px}
+  button:disabled{cursor:not-allowed;opacity:.5}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:hover:not(:disabled){background:var(--accent2)}
+  .btn-sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn-sec:hover{background:#f1f5f9}
+  .btn-bad{background:#fff;color:var(--bad);border:1px solid var(--bad)}
+  .btn-bad:hover{background:#fee2e2}
+  .acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;align-items:center}
+  .btn-generar{flex:1;min-width:240px;padding:16px 24px;font-size:16px;
+    background:var(--accent);color:#fff;font-weight:800;letter-spacing:.03em}
+  .btn-generar:hover:not(:disabled){background:var(--accent2)}
+  .acciones-sec{display:flex;gap:8px;margin-top:12px}
+  .acciones-sec button{font-size:12px;padding:8px 14px;font-weight:600}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .status{font-size:12px;color:var(--sub)}
+  .status.ok{color:var(--accent2);font-weight:700}
+  .status.bad{color:var(--bad);font-weight:700}
+  .status.warn{color:var(--warn);font-weight:700}
+  pre{white-space:pre-wrap;font-size:12px;background:#f8fafc;padding:12px;
+      border-radius:8px;border:1px solid var(--line);max-height:400px;overflow:auto}
+  @media(max-width:700px){
+    .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
+    body{padding:12px}
+    .card{padding:14px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <div>
+      <h1>FALC · Formulario</h1>
+      <h2>Control diario mantenimiento preventivo · Limpieza con equipo presión succión</h2>
+    </div>
+    <div class="status" id="status">Listo</div>
+  </div>
+
+  <div class="config">
+    <div><span class="tag">CONFIG</span><b>Formato:</b> <span id="cfgCodigo"></span> · <b>Versión:</b> <span id="cfgVersion"></span> · <b>Fecha emisión:</b> <span id="cfgFecha"></span> · <b>Contrato:</b> <span id="cfgContrato"></span></div>
+    <div style="font-size:11px;margin-top:4px;opacity:.75">Estos valores se editan en la constante <code>META_FORMATO</code> dentro del script.</div>
+  </div>
+
+  <div class="card">
+    <h3>Identidad de la jornada</h3>
+    <div class="grid grid-4">
+      <div>
+        <label>Fecha actividad</label>
+        <input type="date" id="fechaActividad">
+        <div class="err-txt" id="err-fechaActividad"></div>
+      </div>
+      <div>
+        <label>Contratista</label>
+        <select id="contratista">
+          <option value="">Seleccionar…</option>
+          <option value="Vactor">Vactor</option>
+          <option value="Ingemac">Ingemac</option>
+          <option value="Succión">Succión</option>
+          <option value="Demequipos">Demequipos</option>
+          <option value="ZyGJ">ZyGJ</option>
+        </select>
+        <div class="err-txt" id="err-contratista"></div>
+      </div>
+      <div>
+        <label>Placa</label>
+        <input list="listaPlacas" id="placa" placeholder="Selecciona contratista primero">
+        <datalist id="listaPlacas"></datalist>
+        <div class="err-txt" id="err-placa"></div>
+      </div>
+      <div>
+        <label>Barrio</label>
+        <input list="listaBarrios" id="barrio" placeholder="El Pozón">
+        <datalist id="listaBarrios"></datalist>
+        <div class="err-txt" id="err-barrio"></div>
+      </div>
+    </div>
+    <div class="grid grid-4" style="margin-top:12px">
+      <div>
+        <label>Hora inicio</label>
+        <input type="time" id="horaInicio" value="07:00">
+        <div class="hint">Se usa si el tramo no tiene hora propia</div>
+      </div>
+      <div>
+        <label>Hora fin</label>
+        <input type="time" id="horaFin" value="17:00">
+      </div>
+      <div></div><div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Responsables</h3>
+    <div class="grid grid-2">
+      <div>
+        <label>Operador</label>
+        <input list="listaOperadores" id="operador" placeholder="Selecciona contratista primero">
+        <datalist id="listaOperadores"></datalist>
+        <div class="err-txt" id="err-operador"></div>
+      </div>
+      <div>
+        <label>Inspector</label>
+        <input list="listaInspectores" id="inspector" placeholder="Nombre completo">
+        <datalist id="listaInspectores"></datalist>
+      </div>
+    </div>
+    <input type="hidden" id="ingresadoPor" value="">
+  </div>
+
+  <div class="card">
+    <h3>Tramos</h3>
+    <div class="hint" style="margin-bottom:10px;background:#f0fdf4;padding:8px 12px;border-radius:6px;border:1px solid #86efac;color:#166534">
+      <b>Tramo 1</b> (verde) define el <b>diámetro y material</b> del conjunto. Al cambiarlos, se propagan automáticamente a todos los tramos presentes y futuros.
+    </div>
+    <div id="tramos"></div>
+    <button type="button" class="btn-sec" onclick="agregarTramo()" id="btnAddTramo">+ Agregar tramo</button>
+    <div class="hint" style="margin-top:6px">Máximo 10 tramos. El PDF muestra siempre 10 filas.</div>
+  </div>
+
+  <div class="card">
+    <h3>Novedades y cierre</h3>
+    <div>
+      <label>Novedad / Continuidad operativa</label>
+      <div class="hint" style="margin-bottom:6px;background:#fef3c7;padding:6px 10px;border-radius:6px;border:1px solid #fcd34d;color:#78350f">
+        ⚠ <b>Usa este campo para observaciones largas.</b> Las observaciones por tramo están limitadas a 50 caracteres.
+      </div>
+      <textarea id="novedad" placeholder="Sin novedades registradas."></textarea>
+    </div>
+    <div class="grid grid-2" style="margin-top:12px">
+      <div>
+        <label>Agua total (m³) <span style="color:var(--bad)">*</span></label>
+        <select id="aguaM3">
+          <option value="">Seleccionar…</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="9">9</option>
+          <option value="10">10</option>
+          <option value="12">12</option>
+          <option value="14">14</option>
+          <option value="15">15</option>
+          <option value="16">16</option>
+          <option value="18">18</option>
+        </select>
+        <div class="hint">Obligatorio</div>
+        <div class="err-txt" id="err-aguaM3"></div>
+      </div>
+      <div>
+        <label>¿Se realizó descarga de lodo? <span style="color:var(--bad)">*</span></label>
+        <select id="lodos">
+          <option value="">Seleccionar…</option>
+          <option value="SI">Sí</option>
+          <option value="NO">No</option>
+        </select>
+        <div class="hint">Obligatorio</div>
+        <div class="err-txt" id="err-lodos"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="acciones">
+    <button type="button" class="btn-generar" onclick="generarPDF()">📄 Generar PDF y Enviar</button>
+  </div>
+
+  <div class="acciones-sec">
+    <button type="button" class="btn-sec" onclick="verJSON()">Ver JSON</button>
+    <button type="button" class="btn-bad" onclick="limpiarFormulario()">Limpiar formulario</button>
+  </div>
+
+  <div id="jsonSalida" style="margin-top:16px"></div>
+
+</div>
+
+<script src="./falc-pdf.js"></script>
+
+<script>
+/* ============================================================
+   CONFIGURACIÓN DEL FORMATO
+   ============================================================ */
+const META_FORMATO = {
+  codigo: 'FALC-XX',
+  version: '01',
+  fechaEmision: '____/____/________',
+  contrato: 'CTO-XXXX-XXXX'
+};
+
+/* ============================================================
+   GOOGLE FORM — CONFIGURACIÓN
+   ============================================================ */
+const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSdzFrN9Q3Nnk8G0smF2NOvdP08QdTprhWOQ8VfEfUxv7aNHCg/formResponse';
+const ENTRY = {
+  jornada: 'entry.1184073836',
+  tramos:  'entry.1505087634',
+  cierre:  'entry.704452935'
+};
+
+/* ============================================================
+   CATÁLOGOS POR CONTRATISTA
+   ============================================================ */
+const PLACAS_POR_CONTRATISTA = {
+  'Vactor':     ['KPN 603', 'LPK 666', 'WOW 047', 'GFP 750'],
+  'Succión':    ['GKV 830', 'JLO 019'],
+  'Ingemac':    ['LPL 301', 'KPN 602', 'THQ 592'],
+  'Demequipos': [],
+  'ZyGJ':       []
+};
+
+const OPERADORES_POR_CONTRATISTA = {
+  'Vactor':     ['EDWIN ESTRADA', 'JOSE ROSO', 'LEONARD BARRANCO', 'JOSE LUIS MARTINEZ', 'MANUEL DOMINGUEZ'],
+  'Succión':    ['MAIRON BELTRAN', 'GERARDO NARVAEZ', 'OSMAN CUARTAS', 'FARID PADILLA'],
+  'Ingemac':    ['EDWIN ESTRADA', 'JOSE ROSO', 'LEONARD BARRANCO', 'JOSE LUIS MARTINEZ'],
+  'Demequipos': [],
+  'ZyGJ':       []
+};
+
+const ADMON_POR_CONTRATISTA = {
+  'Vactor':     'ADMON VACTOR - GIOVANI PARRA',
+  'Ingemac':    'ADMON INGEMAAC - BRANDO PARRA',
+  'Succión':    'ADMON SUCCION - MAURICIO PENA',
+  'Demequipos': '',
+  'ZyGJ':       ''
+};
+
+/* ============================================================
+   CATÁLOGOS GENERALES
+   ============================================================ */
+const CATALOGO = {
+  inspectores:  [
+    'ARMANDO PÁJARO',
+    'OIBER MARTINEZ',
+    'GABRIEL VASQUEZ',
+    'EIDER MINA',
+    'LUIS VERGARA',
+    'MARLON LEDEZMA',
+    'LUIS DÍAZ'
+  ],
+  barrios: [
+    'Getsemaní', 'San Diego', 'Centro', 'La Matuna', 'Chambacú',
+    'Bocagrande', 'Castillogrande', 'El Laguito', 'Crespo', 'Marbella',
+    'Manga', 'Cabrero', 'El Prado', 'La Castellana', 'La María',
+    'Pie de la Popa', 'Torices', 'San Francisco', 'Pablo VI', 'Loma Fresca',
+    'El Bosque', 'Nuevo Bosque', 'Zaragocilla', 'Almirante Colón',
+    'Los Alpes', 'Los Caracoles', 'El Country', 'Los Ejecutivos',
+    'Los Almendros', 'Santa Mónica', 'El Recreo', 'Boston',
+    'Olaya Herrera', 'El Pozón', 'Nelson Mandela', 'La Esperanza',
+    'La Consolata', 'Villa Estrella', 'Villa Sandra', 'Bicentenario',
+    'Ciudad del Bicentenario', 'San José de los Campanos',
+    'La Boquilla', 'Villa Rosita', 'Los Cerezos', 'Las Palmas',
+    'San Fernando', 'Paraíso Real', 'Andalucía', 'El Milagro',
+    'La Paz', 'El Reposo', 'Villa del Sol', 'La Floresta',
+    'La Campiña', 'El Rodeo', 'Blas de Lezo', 'La India',
+    'Santa Rita', 'El Educador', 'La Victoria', 'San Isidro',
+    '20 de Julio', '7 de Agosto', 'República de Venezuela',
+    'Los Comuneros', 'Las Lomas', 'Los Ángeles', 'Santa Clara',
+    'José Antonio Galán', 'La Gloria', 'San Pedro Mártir',
+    'El Carmelo', 'Rafael Núñez', 'Las Delicias', 'Nuevo Paraíso',
+    'San Bernardo', 'El Líbano', 'Santa María', 'Villa Bárbara',
+    'San Vicente de Paúl', 'Los Calamares', 'Arroz Barato',
+    'Policarpa', '9 de Abril', 'La Quinta', 'Santa Lucía',
+    'Buenos Aires', 'La Providencia', 'El Gallo', 'Pedro de Heredia',
+    'La Candelaria', 'Ciudad Jardín', 'Villa Andrea', 'Alto Bosque',
+    'Nueva Granada', 'El Paraíso', 'Villagrande', 'Villa Carolina'
+  ]
+};
+
+const DIAMETROS = ['150','200','250','300','400','+400'];
+const MATERIALES = ['PVC','Gres','Asbesto-cemento','HF','Concreto'];
+const MAX_TRAMOS = 10;
+const STORAGE_KEY = 'falc_form_estado_v1';
+
+/* ============================================================
+   UTILIDADES
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const RX_CAM = /^C\d{1,2}-\d{1,4}$/;
+const RX_COD = /^\d{1,6}$/;
+
+function normalizarTexto(s) {
+  return String(s || '')
+    .trim()
+    .toUpperCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+function status(msg, tipo) {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = 'status' + (tipo ? ' ' + tipo : '');
+}
+
+/* ============================================================
+   JORNADA AUTOMÁTICA
+   ============================================================ */
+function calcularJornada(horaInicio) {
+  if (!horaInicio) return '';
+  const h = Number(String(horaInicio).split(':')[0]);
+  if (!isFinite(h)) return '';
+  return (h >= 6 && h < 18) ? 'DIURNA' : 'NOCTURNA';
+}
+
+/* ============================================================
+   POBLAR DATALISTS
+   ============================================================ */
+function poblarDatalist(id, valores) {
+  const dl = $(id);
+  if (!dl) return;
+  dl.innerHTML = valores.map(v => `<option value="${esc(v)}">`).join('');
+}
+
+function actualizarCatalogosDeContratista() {
+  const c = $('contratista').value;
+  const placas = PLACAS_POR_CONTRATISTA[c] || [];
+  const operadores = OPERADORES_POR_CONTRATISTA[c] || [];
+  const admon = ADMON_POR_CONTRATISTA[c] || '';
+
+  poblarDatalist('listaPlacas', placas);
+  poblarDatalist('listaOperadores', operadores);
+
+  $('ingresadoPor').value = admon;
+  guardarEstado();
+}
+
+function poblarCatalogos() {
+  poblarDatalist('listaInspectores',  CATALOGO.inspectores);
+  poblarDatalist('listaBarrios',      CATALOGO.barrios);
+  actualizarCatalogosDeContratista();
+
+  $('cfgCodigo').textContent   = META_FORMATO.codigo;
+  $('cfgVersion').textContent  = META_FORMATO.version;
+  $('cfgFecha').textContent    = META_FORMATO.fechaEmision;
+  $('cfgContrato').textContent = META_FORMATO.contrato;
+}
+
+/* ============================================================
+   TRAMOS DINÁMICOS
+   ============================================================ */
+let tramos = [];
+
+function nuevoTramoVacio() {
+  return {
+    horaInicio:'', horaFin:'',
+    codigo:'', mhArriba:'', mhAbajo:'',
+    diametro:'', material:'', ml:'',
+    aptoCCTV:'SI', observacion:''
+  };
+}
+
+function renderTramos() {
+  const cont = $('tramos');
+  cont.innerHTML = tramos.map((t, i) => {
+    const esApto = t.aptoCCTV === 'SI';
+    const disMl  = esApto ? '' : 'disabled';
+    const disObs = esApto ? 'disabled' : '';
+    const esMaster = i === 0 ? 'master' : '';
+    return `
+    <div class="fila-tramo ${esMaster}" data-idx="${i}">
+      <span class="num">Tramo ${i+1}${i===0?' · MAESTRO':''}</span>
+      ${tramos.length > 1 ? `<button type="button" class="quitar" onclick="quitarTramo(${i})" title="Quitar">✕</button>` : ''}
+      <div class="body">
+        <div class="grid grid-3">
+          <div>
+            <label>Hora inicio</label>
+            <input type="time" data-k="horaInicio" value="${esc(t.horaInicio)}">
+            <div class="hint">Vacío = usa la general</div>
+          </div>
+          <div>
+            <label>Hora fin</label>
+            <input type="time" data-k="horaFin" value="${esc(t.horaFin)}">
+            <div class="hint">Vacío = usa la general</div>
+          </div>
+          <div>
+            <label>Código del tramo</label>
+            <input type="text" data-k="codigo" value="${esc(t.codigo)}" placeholder="105" inputmode="numeric" maxlength="6">
+            <div class="err-txt" data-err="codigo-${i}"></div>
+          </div>
+        </div>
+        <div class="grid grid-3" style="margin-top:10px">
+          <div>
+            <label>C arriba</label>
+            <input type="text" data-k="mhArriba" value="${esc(t.mhArriba)}" placeholder="C1-01" maxlength="8" style="text-transform:uppercase">
+            <div class="err-txt" data-err="mhArriba-${i}"></div>
+          </div>
+          <div>
+            <label>C abajo</label>
+            <input type="text" data-k="mhAbajo" value="${esc(t.mhAbajo)}" placeholder="C1-02" maxlength="8" style="text-transform:uppercase">
+            <div class="err-txt" data-err="mhAbajo-${i}"></div>
+          </div>
+          <div>
+            <label>Apto CCTV</label>
+            <select data-k="aptoCCTV">
+              <option value="SI" ${esApto?'selected':''}>Sí</option>
+              <option value="NO" ${!esApto?'selected':''}>No</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-3" style="margin-top:10px">
+          <div>
+            <label>Diámetro ${i===0?'(maestro)':''}</label>
+            <select data-k="diametro">
+              <option value="">Seleccionar…</option>
+              ${DIAMETROS.map(d => `<option value="${d}" ${t.diametro===d?'selected':''}>${d}</option>`).join('')}
+            </select>
+            <div class="err-txt" data-err="diametro-${i}"></div>
+          </div>
+          <div>
+            <label>Material ${i===0?'(maestro)':''}</label>
+            <select data-k="material">
+              <option value="">Seleccionar…</option>
+              ${MATERIALES.map(m => `<option value="${m}" ${t.material===m?'selected':''}>${m}</option>`).join('')}
+            </select>
+            <div class="err-txt" data-err="material-${i}"></div>
+          </div>
+          <div>
+            <label>Longitud (ML) ${esApto?'<span style="color:var(--bad)">*</span>':''}</label>
+            <input type="number" data-k="ml" value="${esc(t.ml)}" min="3" max="130" step="0.01" placeholder="45.30" ${disMl}>
+            <div class="err-txt" data-err="ml-${i}"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px">
+          <label>Observación del tramo ${!esApto?'<span style="color:var(--bad)">*</span>':''}</label>
+          <input type="text" data-k="observacion" value="${esc(t.observacion)}" placeholder="${esApto?'No aplica (tramo apto CCTV)':'Motivo (máx. 50 caracteres)'}" maxlength="50" ${disObs}>
+          <div class="hint" style="display:flex;justify-content:space-between">
+            <span>Máx. 50 caracteres. Detalles largos van en <b>Novedades</b>.</span>
+            <span data-count="observacion-${i}">${String(t.observacion||'').length}/50</span>
+          </div>
+          <div class="err-txt" data-err="observacion-${i}"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  cont.querySelectorAll('input[data-k], select[data-k]').forEach(el => {
+    const handler = () => {
+      const idx = Number(el.closest('.fila-tramo').dataset.idx);
+      tramos[idx][el.dataset.k] = el.value;
+      guardarEstado();
+    };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  });
+
+  cont.querySelectorAll('.fila-tramo[data-idx="0"] select[data-k="diametro"], .fila-tramo[data-idx="0"] select[data-k="material"]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const key = sel.dataset.k;
+      const val = sel.value;
+      tramos.forEach((t, i) => { if (i > 0) t[key] = val; });
+      renderTramos();
+      guardarEstado();
+    });
+  });
+
+  cont.querySelectorAll('select[data-k="aptoCCTV"]').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const idx = Number(sel.closest('.fila-tramo').dataset.idx);
+      const val = sel.value;
+      tramos[idx].aptoCCTV = val;
+      if (val === 'SI') {
+        tramos[idx].observacion = '';
+      } else {
+        tramos[idx].ml = '';
+      }
+      renderTramos();
+      guardarEstado();
+    });
+  });
+
+  cont.querySelectorAll('input[data-k="observacion"]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const idx = Number(inp.closest('.fila-tramo').dataset.idx);
+      const span = cont.querySelector(`[data-count="observacion-${idx}"]`);
+      if (span) span.textContent = inp.value.length + '/50';
+    });
+  });
+
+  $('btnAddTramo').disabled = tramos.length >= MAX_TRAMOS;
+  $('btnAddTramo').textContent = tramos.length >= MAX_TRAMOS
+    ? `Máximo ${MAX_TRAMOS} tramos`
+    : `+ Agregar tramo (${tramos.length}/${MAX_TRAMOS})`;
+}
+
+function agregarTramo() {
+  if (tramos.length >= MAX_TRAMOS) return;
+  const nuevo = nuevoTramoVacio();
+  if (tramos.length > 0) {
+    if (tramos[0].diametro) nuevo.diametro = tramos[0].diametro;
+    if (tramos[0].material) nuevo.material = tramos[0].material;
+  }
+  nuevo.horaInicio = $('horaInicio').value;
+  nuevo.horaFin = $('horaFin').value;
+  tramos.push(nuevo);
+  renderTramos();
+  guardarEstado();
+}
+
+function quitarTramo(i) {
+  tramos.splice(i, 1);
+  renderTramos();
+  guardarEstado();
+}
+
+$('contratista').addEventListener('change', actualizarCatalogosDeContratista);
+
+/* ============================================================
+   VALIDACIÓN
+   ============================================================ */
+function marcarError(id, msg) {
+  const el = document.querySelector(`[data-err="${id}"]`);
+  if (!el) return;
+  el.textContent = msg || '';
+  el.classList.toggle('on', !!msg);
+  const input = el.parentElement.querySelector('input, select, textarea');
+  if (input) input.classList.toggle('error', !!msg);
+}
+
+function limpiarErrores() {
+  document.querySelectorAll('.err-txt').forEach(e => { e.textContent=''; e.classList.remove('on'); });
+  document.querySelectorAll('input.error, select.error').forEach(e => e.classList.remove('error'));
+}
+
+function mostrarErrorCampo(id, msg) {
+  const input = $(id);
+  const err = $('err-' + id);
+  if (input) input.classList.add('error');
+  if (err) { err.textContent = msg; err.classList.add('on'); }
+}
+
+function validar() {
+  limpiarErrores();
+  let ok = true;
+
+  if (!$('fechaActividad').value) { mostrarErrorCampo('fechaActividad', 'Selecciona fecha'); ok = false; }
+  if (!$('contratista').value) { mostrarErrorCampo('contratista', 'Selecciona contratista'); ok = false; }
+  if (!$('placa').value.trim()) { mostrarErrorCampo('placa', 'Requerido'); ok = false; }
+  if (!$('barrio').value.trim()) { mostrarErrorCampo('barrio', 'Requerido'); ok = false; }
+  if (!calcularJornada($('horaInicio').value)) { mostrarErrorCampo('horaInicio', 'Hora inválida'); ok = false; }
+  if ($('operador').value.trim().length < 3) { mostrarErrorCampo('operador', 'Mínimo 3 caracteres'); ok = false; }
+
+  if (!$('aguaM3').value) { mostrarErrorCampo('aguaM3', 'Obligatorio'); ok = false; }
+  if (!$('lodos').value) { mostrarErrorCampo('lodos', 'Obligatorio'); ok = false; }
+
+  if (!tramos.length) { ok = false; status('Agrega al menos un tramo', 'bad'); }
+
+  const vistos = new Set();
+  tramos.forEach((t, i) => {
+    if (!RX_COD.test(String(t.codigo||'').trim())) {
+      marcarError(`codigo-${i}`, 'Solo números 1-6 dígitos'); ok = false;
+    } else if (vistos.has(t.codigo)) {
+      marcarError(`codigo-${i}`, 'Duplicado'); ok = false;
+    } else {
+      vistos.add(t.codigo);
+    }
+    if (!RX_CAM.test(String(t.mhArriba||'').trim().toUpperCase())) {
+      marcarError(`mhArriba-${i}`, 'Formato C#-##'); ok = false;
+    }
+    if (!RX_CAM.test(String(t.mhAbajo||'').trim().toUpperCase())) {
+      marcarError(`mhAbajo-${i}`, 'Formato C#-##'); ok = false;
+    }
+    if (!t.diametro) { marcarError(`diametro-${i}`, 'Selecciona'); ok = false; }
+    if (!t.material) { marcarError(`material-${i}`, 'Selecciona'); ok = false; }
+
+    if (t.aptoCCTV === 'SI') {
+      const ml = Number(t.ml);
+      if (!isFinite(ml) || ml < 3 || ml > 130) {
+        marcarError(`ml-${i}`, 'Entre 3 y 130'); ok = false;
+      }
+    } else {
+      if (!String(t.observacion||'').trim()) {
+        marcarError(`observacion-${i}`, 'Motivo obligatorio para tramos NO aptos'); ok = false;
+      }
+    }
+  });
+
+  return ok;
+}
+
+/* ============================================================
+   RECOLECCIÓN DE DATOS
+   ============================================================ */
+function recolectar() {
+  const hg1 = $('horaInicio').value;
+  const hg2 = $('horaFin').value;
+  return {
+    identidad: {
+      fechaActividad: $('fechaActividad').value,
+      placa: normalizarTexto($('placa').value),
+      barrio: normalizarTexto($('barrio').value),
+      jornada: calcularJornada(hg1),
+      horaInicio: hg1,
+      horaFin: hg2
+    },
+    contratista: $('contratista').value,
+    contrato: META_FORMATO.contrato,
+    operador: normalizarTexto($('operador').value),
+    inspector: normalizarTexto($('inspector').value),
+    ingresadoPor: $('ingresadoPor').value,
+    rolIngreso: 'ADMINISTRATIVO',
+    tramos: tramos.map(t => ({
+      horaInicio: t.horaInicio || hg1,
+      horaFin:    t.horaFin    || hg2,
+      codigo: String(t.codigo).trim(),
+      mhArriba: String(t.mhArriba).trim().toUpperCase(),
+      mhAbajo: String(t.mhAbajo).trim().toUpperCase(),
+      diametro: t.diametro,
+      material: t.material,
+      ml: t.aptoCCTV === 'SI' ? Number(t.ml) : '',
+      aptoCCTV: t.aptoCCTV,
+      observacion: t.aptoCCTV === 'NO' ? normalizarTexto(t.observacion) : ''
+    })),
+    novedad: $('novedad').value.trim() || 'Sin novedades registradas.',
+    aguaM3: Number($('aguaM3').value),
+    lodos: $('lodos').value,
+    resumen: {
+      aguaM3: Number($('aguaM3').value),
+      lodos: $('lodos').value
+    },
+    metaFormato: {
+      codigo: META_FORMATO.codigo,
+      version: META_FORMATO.version,
+      fechaEmision: META_FORMATO.fechaEmision
+    }
+  };
+}
+
+function construirBloques(datos) {
+  const jornada = {
+    identidad: datos.identidad,
+    contratista: datos.contratista,
+    contrato: datos.contrato,
+    operador: datos.operador,
+    inspector: datos.inspector,
+    ingresadoPor: datos.ingresadoPor,
+    rolIngreso: datos.rolIngreso,
+    metaFormato: datos.metaFormato
+  };
+
+  const tramos = datos.tramos;
+
+  const cierre = {
+    novedad: datos.novedad,
+    aguaM3: datos.aguaM3,
+    lodos: datos.lodos,
+    resumen: datos.resumen,
+    referencia: 'FALC-' + (datos.identidad.fechaActividad||'').replace(/-/g,'') + '-' +
+                (datos.identidad.placa||'').replace(/\s+/g,''),
+    timestamp: new Date().toISOString()
+  };
+
+  return { jornada, tramos, cierre };
+}
+
+/* ============================================================
+   ACCIÓN PRINCIPAL: GENERAR PDF Y ENVIAR
+   ============================================================ */
+async function generarPDF() {
+  if (!validar()) { status('Hay errores en el formulario', 'bad'); return; }
+
+  const ok = confirm(
+    '⚠ CONFIRMACIÓN\n\n' +
+    'Al continuar:\n' +
+    '• Se enviará la información al motor.\n' +
+    '• Se abrirá el diálogo de impresión para guardar el PDF.\n' +
+    '• La información quedará registrada y NO podrá ser editada.\n\n' +
+    '¿Deseas continuar?'
+  );
+
+  if (!ok) {
+    status('Envío cancelado', 'warn');
+    return;
+  }
+
+  const datos = recolectar();
+  const bloques = construirBloques(datos);
+  const referencia = 'FALC-' + (datos.identidad.fechaActividad||'').replace(/-/g,'') + '-' +
+                     (datos.identidad.placa||'').replace(/\s+/g,'');
+
+  const params = new URLSearchParams();
+  params.append(ENTRY.jornada, JSON.stringify(bloques.jornada));
+  params.append(ENTRY.tramos,  JSON.stringify(bloques.tramos));
+  params.append(ENTRY.cierre,  JSON.stringify(bloques.cierre));
+
+  try {
+    status('Enviando al motor…');
+    await fetch(FORM_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString()
+    });
+  } catch (e) {
+    status('Error al enviar: ' + e.message, 'bad');
+    return;
+  }
+
+  if (typeof window.falcGenerarHTMLFALC !== 'function') {
+    alert('No se cargó falc-pdf.js. Verifica que esté en la misma carpeta.');
+    return;
+  }
+
+  const htmlPDF = window.falcGenerarHTMLFALC(datos, referencia, 'INGRESO CONFIRMADO');
+  imprimirPDFEnIframe(htmlPDF);
+
+  status('Enviado · Diálogo de impresión abierto · ' + referencia, 'ok');
+}
+
+function imprimirPDFEnIframe(html) {
+  const previo = document.getElementById('falc-iframe-print');
+  if (previo) previo.remove();
+
+  const iframe = document.createElement('iframe');
+  iframe.id = 'falc-iframe-print';
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.style.visibility = 'hidden';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow.document;
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      try {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+      } catch (e) {
+        alert('No se pudo abrir el diálogo de impresión: ' + e.message);
+      }
+    }, 300);
+  };
+}
+
+function verJSON() {
+  if (!validar()) { status('Hay errores en el formulario', 'bad'); return; }
+  const datos = recolectar();
+  const bloques = construirBloques(datos);
+  $('jsonSalida').innerHTML = '<div class="card"><h3>JSON generado</h3><pre>' +
+    esc(JSON.stringify(bloques, null, 2)) + '</pre></div>';
+  status('JSON listo', 'ok');
+}
+
+function limpiarFormulario() {
+  if (!confirm('¿Borrar todos los datos del formulario?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+/* ============================================================
+   PERSISTENCIA
+   ============================================================ */
+function guardarEstado() {
+  const estado = {
+    fechaActividad: $('fechaActividad').value,
+    placa: $('placa').value,
+    barrio: $('barrio').value,
+    horaInicio: $('horaInicio').value,
+    horaFin: $('horaFin').value,
+    contratista: $('contratista').value,
+    operador: $('operador').value,
+    inspector: $('inspector').value,
+    ingresadoPor: $('ingresadoPor').value,
+    novedad: $('novedad').value,
+    aguaM3: $('aguaM3').value,
+    lodos: $('lodos').value,
+    tramos
+  };
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(estado)); } catch(e) {}
+}
+
+function cargarEstado() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const e = JSON.parse(raw);
+    const set = (id, v) => { if (v != null) $(id).value = v; };
+    set('fechaActividad', e.fechaActividad);
+    set('placa', e.placa);
+    set('barrio', e.barrio);
+    set('horaInicio', e.horaInicio);
+    set('horaFin', e.horaFin);
+    set('contratista', e.contratista);
+    set('operador', e.operador);
+    set('inspector', e.inspector);
+    set('ingresadoPor', e.ingresadoPor);
+    set('novedad', e.novedad);
+    set('aguaM3', e.aguaM3);
+    set('lodos', e.lodos);
+    if (Array.isArray(e.tramos) && e.tramos.length) tramos = e.tramos;
+    return true;
+  } catch(e) { return false; }
+}
+
+/* ============================================================
+   INICIALIZACIÓN
+   ============================================================ */
+window.addEventListener('load', () => {
+  const habia = cargarEstado();
+  poblarCatalogos();
+
+  if (!habia) {
+    $('fechaActividad').value = new Date().toISOString().slice(0,10);
+    tramos = [nuevoTramoVacio()];
+  }
+  renderTramos();
+  actualizarCatalogosDeContratista();
+
+  document.body.addEventListener('input', guardarEstado);
+  document.body.addEventListener('change', guardarEstado);
+
+  status(habia ? 'Borrador recuperado' : 'Listo');
+});
+</script>
+
+</body>
+</html>
