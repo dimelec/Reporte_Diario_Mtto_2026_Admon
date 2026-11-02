@@ -137,6 +137,7 @@
       <div>
         <label>Hora fin</label>
         <input type="time" id="horaFin" value="17:00">
+        <div class="hint">Sugerida: inicio + 8 h, redondeada hacia arriba. Puedes modificarla.</div>
       </div>
       <div></div><div></div>
     </div>
@@ -419,12 +420,14 @@ function renderTramos() {
           <div>
             <label>Hora inicio</label>
             <input type="time" data-k="horaInicio" value="${esc(t.horaInicio)}">
-            <div class="hint">Vacío = usa la general</div>
+            <div class="err-txt" data-err="horaInicio-${i}"></div>
+            <div class="hint">Obligatorio: hora propia del tramo</div>
           </div>
           <div>
             <label>Hora fin</label>
             <input type="time" data-k="horaFin" value="${esc(t.horaFin)}">
-            <div class="hint">Vacío = usa la general</div>
+            <div class="err-txt" data-err="horaFin-${i}"></div>
+            <div class="hint">Obligatorio: hora propia del tramo</div>
           </div>
           <div>
             <label>Código del tramo</label>
@@ -543,8 +546,6 @@ function agregarTramo() {
     if (tramos[0].diametro) nuevo.diametro = tramos[0].diametro;
     if (tramos[0].material) nuevo.material = tramos[0].material;
   }
-  nuevo.horaInicio = $('horaInicio').value;
-  nuevo.horaFin = $('horaFin').value;
   tramos.push(nuevo);
   renderTramos();
   guardarEstado();
@@ -557,6 +558,51 @@ function quitarTramo(i) {
 }
 
 $('contratista').addEventListener('change', actualizarCatalogosDeContratista);
+
+/* ============================================================
+   HORARIO FALC: sugerencia, lectura y duración
+   ============================================================ */
+function falcMinutos(hora) {
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora || ''))) return null;
+  const [h, m] = hora.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function falcHoraLegible(hora) {
+  const minutos = falcMinutos(hora);
+  if (minutos === null) return 'Hora inválida';
+  const h = Math.floor(minutos / 60);
+  return (h % 12 || 12) + ':' + String(minutos % 60).padStart(2, '0') +
+    (h < 12 ? ' a. m.' : ' p. m.');
+}
+
+function falcSugerirFin(inicio) {
+  const minutos = falcMinutos(inicio);
+  if (minutos === null) return '';
+  const cierre = Math.ceil((minutos + 8 * 60) / 60) * 60;
+  return String(Math.floor(cierre / 60) % 24).padStart(2, '0') + ':00';
+}
+
+function falcDuracion(inicio, fin) {
+  const a = falcMinutos(inicio), b = falcMinutos(fin);
+  if (a === null || b === null) return null;
+  // Si fin es anterior al inicio, se interpreta como cierre al día siguiente.
+  // Si son iguales, la duración es ambigua y debe corregirse.
+  if (a === b) return null;
+  const minutos = b > a ? b - a : b + 1440 - a;
+  return { minutos, diaSiguiente: b < a };
+}
+
+function falcConfigurarSugerencia() {
+  const inicio = $('horaInicio'), fin = $('horaFin');
+  inicio.addEventListener('change', () => {
+    const sugerencia = falcSugerirFin(inicio.value);
+    if (sugerencia) {
+      fin.value = sugerencia;
+      guardarEstado();
+    }
+  });
+}
 
 /* ============================================================
    VALIDACIÓN
@@ -591,12 +637,49 @@ function validar() {
   if (!$('placa').value.trim()) { mostrarErrorCampo('placa', 'Requerido'); ok = false; }
   if (!$('barrio').value.trim()) { mostrarErrorCampo('barrio', 'Requerido'); ok = false; }
   if (!calcularJornada($('horaInicio').value)) { mostrarErrorCampo('horaInicio', 'Hora inválida'); ok = false; }
+  if (falcMinutos($('horaFin').value) === null || !falcDuracion($('horaInicio').value, $('horaFin').value)) { mostrarErrorCampo('horaFin', 'Revisa la hora de cierre: debe ser válida y distinta de la inicial'); ok = false; }
   if ($('operador').value.trim().length < 3) { mostrarErrorCampo('operador', 'Mínimo 3 caracteres'); ok = false; }
 
   if (!$('aguaM3').value) { mostrarErrorCampo('aguaM3', 'Obligatorio'); ok = false; }
   if (!$('lodos').value) { mostrarErrorCampo('lodos', 'Obligatorio'); ok = false; }
 
   if (!tramos.length) { ok = false; status('Agrega al menos un tramo', 'bad'); }
+
+  // Validación cronológica, sin clasificar los intervalos entre tramos.
+  const inicioGeneral = falcMinutos($('horaInicio').value);
+  const duracionGeneral = falcDuracion($('horaInicio').value, $('horaFin').value);
+  if (inicioGeneral !== null && duracionGeneral) {
+    const cierreAbsoluto = inicioGeneral + duracionGeneral.minutos;
+    let cierreAnterior = inicioGeneral;
+    tramos.forEach((t, i) => {
+      const inicio = falcMinutos(t.horaInicio);
+      const fin = falcMinutos(t.horaFin);
+      if (inicio === null) {
+        marcarError(`horaInicio-${i}`, 'Indica la hora inicial del tramo'); ok = false;
+      }
+      if (fin === null) {
+        marcarError(`horaFin-${i}`, 'Indica la hora final del tramo'); ok = false;
+      }
+      if (inicio === null || fin === null) return;
+
+      // Una jornada dura menos de 24 h. Se sitúa cada hora en el
+      // día de inicio o en el siguiente, sin inferir actividades.
+      const inicioAbsoluto = inicio < inicioGeneral ? inicio + 1440 : inicio;
+      const finAbsoluto = fin < inicioGeneral ? fin + 1440 : fin;
+      if (inicioAbsoluto <= cierreAnterior || inicioAbsoluto >= cierreAbsoluto) {
+        marcarError(`horaInicio-${i}`, 'Debe iniciar después del límite anterior y antes del cierre');
+        ok = false;
+      }
+      if (finAbsoluto <= inicioAbsoluto || finAbsoluto >= cierreAbsoluto) {
+        marcarError(`horaFin-${i}`, 'Debe terminar después de su inicio y antes del cierre');
+        ok = false;
+      }
+      // No avanzar el límite cuando este tramo es inválido.
+      if (inicioAbsoluto > cierreAnterior && finAbsoluto > inicioAbsoluto && finAbsoluto < cierreAbsoluto) {
+        cierreAnterior = finAbsoluto;
+      }
+    });
+  }
 
   const vistos = new Set();
   tramos.forEach((t, i) => {
@@ -653,8 +736,8 @@ function recolectar() {
     ingresadoPor: $('ingresadoPor').value,
     rolIngreso: 'ADMINISTRATIVO',
     tramos: tramos.map(t => ({
-      horaInicio: t.horaInicio || hg1,
-      horaFin:    t.horaFin    || hg2,
+      horaInicio: t.horaInicio,
+      horaFin:    t.horaFin,
       codigo: String(t.codigo).trim(),
       mhArriba: String(t.mhArriba).trim().toUpperCase(),
       mhAbajo: String(t.mhAbajo).trim().toUpperCase(),
@@ -710,15 +793,28 @@ function construirBloques(datos) {
    ACCIÓN PRINCIPAL: GENERAR PDF Y ENVIAR
    ============================================================ */
 async function generarPDF() {
+  if (typeof window.falcGenerarHTMLFALC !== 'function') {
+    status('No se cargó falc-pdf.js; no se envió información', 'bad');
+    return;
+  }
   if (!validar()) { status('Hay errores en el formulario', 'bad'); return; }
 
+  const horaInicio = $('horaInicio').value;
+  const horaFin = $('horaFin').value;
+  const duracion = falcDuracion(horaInicio, horaFin);
+  const horas = Math.floor(duracion.minutos / 60);
+  const minutos = duracion.minutos % 60;
   const ok = confirm(
-    '⚠ CONFIRMACIÓN\n\n' +
+    '⚠ CONFIRMACIÓN FALC\n\n' +
+    'Inicio: ' + falcHoraLegible(horaInicio) + '\n' +
+    'Fin: ' + falcHoraLegible(horaFin) +
+      (duracion.diaSiguiente ? ' (DÍA SIGUIENTE)' : '') + '\n' +
+    'Duración: ' + horas + ' h ' + String(minutos).padStart(2, '0') + ' min\n\n' +
     'Al continuar:\n' +
     '• Se enviará la información al motor.\n' +
     '• Se abrirá el diálogo de impresión para guardar el PDF.\n' +
     '• La información quedará registrada y NO podrá ser editada.\n\n' +
-    '¿Deseas continuar?'
+    '¿Confirmas que las horas y los datos son correctos?'
   );
 
   if (!ok) {
@@ -730,6 +826,15 @@ async function generarPDF() {
   const bloques = construirBloques(datos);
   const referencia = 'FALC-' + (datos.identidad.fechaActividad||'').replace(/-/g,'') + '-' +
                      (datos.identidad.placa||'').replace(/\s+/g,'');
+
+  let htmlPDF;
+  try {
+    htmlPDF = window.falcGenerarHTMLFALC(datos, referencia, 'INGRESO CONFIRMADO');
+    if (typeof htmlPDF !== 'string' || !htmlPDF.trim()) throw new Error('PDF vacío');
+  } catch (e) {
+    status('No se generó el PDF; no se envió información: ' + e.message, 'bad');
+    return;
+  }
 
   const params = new URLSearchParams();
   params.append(ENTRY.jornada, JSON.stringify(bloques.jornada));
@@ -749,15 +854,9 @@ async function generarPDF() {
     return;
   }
 
-  if (typeof window.falcGenerarHTMLFALC !== 'function') {
-    alert('No se cargó falc-pdf.js. Verifica que esté en la misma carpeta.');
-    return;
-  }
-
-  const htmlPDF = window.falcGenerarHTMLFALC(datos, referencia, 'INGRESO CONFIRMADO');
   imprimirPDFEnIframe(htmlPDF);
 
-  status('Enviado · Diálogo de impresión abierto · ' + referencia, 'ok');
+  status('Solicitud de envío realizada (confirmación pendiente en Google Forms) · Impresión solicitada · ' + referencia, 'warn');
 }
 
 function imprimirPDFEnIframe(html) {
@@ -865,6 +964,7 @@ window.addEventListener('load', () => {
   }
   renderTramos();
   actualizarCatalogosDeContratista();
+  falcConfigurarSugerencia();
 
   document.body.addEventListener('input', guardarEstado);
   document.body.addEventListener('change', guardarEstado);
