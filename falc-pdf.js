@@ -106,13 +106,13 @@
 
     var j=String(id.jornada||'').toUpperCase();
     var jornadaTexto='';
-    if(j.indexOf('DIURN')>=0)jornadaTexto='[X] Diurna';
-    else if(j.indexOf('NOCTURN')>=0)jornadaTexto='[X] Nocturna';
+    if(j.indexOf('DIURN')>=0)jornadaTexto=' Diurna';
+    else if(j.indexOf('NOCTURN')>=0)jornadaTexto=' Nocturna';
 
     var meta = datos.metaFormato || {};
     var metaCodigo = String(meta.codigo || FALC_META.codigo);
     var metaVersion = String(meta.version || FALC_META.version);
-    var metaFecha = String(meta.fechaEmision || FALC_META.fecha);
+    var metaFecha = '2026/10/15';
 
     var quien = datos.ingresadoPor || (window.V8 && window.V8.nombre) || '—';
     var rol   = datos.rolIngreso   || (window.V8 && window.V8.rol)    || 'INGRESO MANUAL';
@@ -193,8 +193,8 @@
 
     var lodosVal = String(datos.resumen.lodos||'').toUpperCase();
     var lodosLinea = lodosVal==='SI'
-      ? 'Se realizó descarga de lodo durante la jornada.'
-      : 'Sin descarga de lodo registrada.';
+      ? 'SI.'
+      : 'NO.';
 
     var aguaTxt = (datos.resumen.aguaM3 !== '' && datos.resumen.aguaM3 != null) ? datos.resumen.aguaM3 : '—';
 
@@ -282,20 +282,40 @@
 
       +'<tr class="separador"><td colspan="10"></td></tr>'
 
+      // Una sola fila: los cuatro campos comparten la misma altura.
       +'<tr class="bloque-inferior">'
-      +'<td colspan="8">'
-      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid #6e7a81">'
-      +'<div class="resumen-celda"><b>LONGITUD TOTAL APTA (ML)</b><span class="valor">'+esc(datos.resumen.longitudTotalApta)+'</span></div>'
-      +'<div class="resumen-celda"><b>HORA NETA</b><span class="valor">'+esc(horaNeta||'—')+'</span></div>'
-      +'<div class="resumen-celda"><b>AGUA TOTAL (M³)</b><span class="valor">'+esc(aguaTxt)+'</span></div>'
+      +'<td colspan="8" style="padding:0;vertical-align:middle">'
+      +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr">'
+      +'<div class="resumen-celda">'
+      +'<b>LONGITUD TOTAL APTA (ML)</b>'
+      +'<span class="valor">'+esc(datos.resumen.longitudTotalApta)+'</span>'
       +'</div>'
-      +'<div style="padding:1.5mm 2.5mm"><b style="display:block;font-size:8px;margin-bottom:1mm">NOVEDADES Y CONTINUIDAD OPERATIVA</b>'
-      +'<div class="novedades-txt">'+esc(datos.novedades)+'</div></div>'
+      +'<div class="resumen-celda">'
+      +'<b>HORA NETA</b>'
+      +'<span class="valor">'+esc(horaNeta||'—')+'</span>'
+      +'</div>'
+      +'<div class="resumen-celda">'
+      +'<b>AGUA TOTAL (M³)</b>'
+      +'<span class="valor">'+esc(aguaTxt)+'</span>'
+      +'</div>'
+      +'</div>'
       +'</td>'
-      +'<td colspan="2">'
-      +'<div style="padding:1.5mm 2.5mm;border-bottom:1px solid #6e7a81"><b style="display:block;font-size:8px;margin-bottom:1mm">DESCARGA DE LODOS</b>'
-      +'<span style="font-size:9px">'+esc(lodosLinea)+'</span></div>'
-      +'<div class="leyenda" style="padding:1.5mm 2.5mm"><ul>'
+      +'<td colspan="2" style="padding:1.5mm 2.5mm;vertical-align:middle">'
+      +'<b style="display:block;font-size:8px;margin-bottom:1mm">'
+      +'DESCARGA DE LODOS</b>'
+      +'<span style="font-size:9px">'+esc(lodosLinea)+'</span>'
+      +'</td>'
+      +'</tr>'
+
+      // Observaciones e indicaciones comienzan en la misma línea.
+      +'<tr class="bloque-inferior">'
+      +'<td colspan="8" style="padding:1.5mm 2.5mm;vertical-align:top">'
+      +'<b style="display:block;font-size:8px;margin-bottom:1mm">'
+      +'NOVEDADES Y CONTINUIDAD OPERATIVA</b>'
+      +'<div class="novedades-txt">'+esc(datos.novedades)+'</div>'
+      +'</td>'
+      +'<td colspan="2" style="padding:1.5mm 2.5mm;vertical-align:top">'
+      +'<div class="leyenda"><ul>'
       +'<li>Tramo NO apto = longitud en blanco y motivo en observaciones.</li>'
       +'<li>Observaciones por tramo: máx. 50 caracteres. Detalles extensos en NOVEDADES.</li>'
       +'<li>En continuidad indicar tramo, condición y acción pendiente.</li>'
